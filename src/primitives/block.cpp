@@ -25,6 +25,13 @@ std::string CBlock::ToString() const
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,
         vtx.size());
+    if (isCuckooPow()) {
+        s << "cuckooProof=";
+        for (unsigned int i = 0; i < 42; i++) {
+            s << strprintf("%u", cuckooProof[i]);
+        }
+        s << "\n";
+    }
     for (const auto& tx : vtx) {
         s << "  " << tx->ToString() << "\n";
     }

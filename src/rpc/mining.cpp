@@ -128,7 +128,10 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             LOCK(cs_main);
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
-        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetHash(), pblock->nBits, Params().GetConsensus())) {
+        if (pblock->isCuckooPow()) {
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Can't generate cuckoo cycle pow blocks");
+        }
+        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetBlockHeader(), Params().GetConsensus())) {
             ++pblock->nNonce;
             --nMaxTries;
         }
@@ -359,6 +362,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
             "  \"sizelimit\" : n,                  (numeric) limit of block size\n"
             "  \"weightlimit\" : n,                (numeric) limit of block weight\n"
             "  \"curtime\" : ttt,                  (numeric) current timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
+	    "   \"powchangeheight\" : ttt           (numeric) the block height at which the proof-of-work algorithm changes to cuckoo cycle\n"
             "  \"bits\" : \"xxxxxxxx\",              (string) compressed target of next block\n"
             "  \"height\" : n                      (numeric) The height of the next block\n"
             "}\n"
@@ -669,6 +673,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
         result.push_back(Pair("weightlimit", (int64_t)MAX_BLOCK_WEIGHT));
     }
     result.push_back(Pair("curtime", pblock->GetBlockTime()));
+    result.push_back(Pair("powchangeheight", consensusParams.CuckooHardForkBlockHeight));
     result.push_back(Pair("bits", strprintf("%08x", pblock->nBits)));
     result.push_back(Pair("height", (int64_t)(pindexPrev->nHeight+1)));
 

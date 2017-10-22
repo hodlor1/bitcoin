@@ -286,8 +286,13 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
+                if (pindexNew->nHeight >= Params().GetConsensus().CuckooHardForkBlockHeight) {
+                    for (int i=0; i<42; i++) {
+                        pindexNew->cuckooProof[i] = diskindex.cuckooProof[i];
+                    }
+                }
 
-                if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams))
+                if (!CheckProofOfWork(pindexNew->GetBlockHeader(), Params().GetConsensus()))
                     return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
 
                 pcursor->Next();
