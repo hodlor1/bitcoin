@@ -198,6 +198,11 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
     pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
     pblock->nNonce         = 0;
+    if ((pblock->nVersion & CUCKOO_HARDFORK_VERSION_MASK) == CUCKOO_HARDFORK_VERSION_MASK) {
+        for (int i=0; i<42; i++) {
+            pblock->cuckooProof[i] = i;
+        }
+    }
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;

@@ -56,12 +56,17 @@ struct Params {
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
     /** Proof of work parameters */
     uint256 powLimit;
+    uint256 cuckooPowLimit;
     bool fPowAllowMinDifficultyBlocks;
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
     uint256 nMinimumChainWork;
+
+    /** Block height at which cuckoo pow change becomes active */
+    int CuckooHardForkBlockHeight;
+
     uint256 defaultAssumeValid;
 };
 } // namespace Consensus

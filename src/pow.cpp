@@ -9,14 +9,21 @@
 #include "chain.h"
 #include "primitives/block.h"
 #include "uint256.h"
+#include "streams.h"
+#include "hash.h"
+#include "version.h"
+#include "crypto/cuckoo.h"
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
+    unsigned int nCuckooProofOfWorkLimit = UintToArith256(params.cuckooPowLimit).GetCompact();
+
+    int currentBlockHeight = pindexLast->nHeight+1;
 
     // Only change once per difficulty adjustment interval
-    if ((pindexLast->nHeight+1) % params.DifficultyAdjustmentInterval() != 0)
+    if (currentBlockHeight % params.DifficultyAdjustmentInterval() != 0)
     {
         if (params.fPowAllowMinDifficultyBlocks)
         {
@@ -24,7 +31,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
             // If the new block's timestamp is more than 2* 10 minutes
             // then allow mining of a min-difficulty block.
             if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing*2)
-                return nProofOfWorkLimit;
+                return (currentBlockHeight >= params.CuckooHardForkBlockHeight)? nCuckooProofOfWorkLimit : nProofOfWorkLimit;
             else
             {
                 // Return the last non-special-min-difficulty-rules-block
@@ -35,6 +42,9 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
             }
         }
         return pindexLast->nBits;
+    } 
+    else if (currentBlockHeight == params.CuckooHardForkBlockHeight) {
+        return nCuckooProofOfWorkLimit;
     }
 
     // Go back by what we want to be 14 days worth of blocks
@@ -71,21 +81,48 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
     return bnNew.GetCompact();
 }
 
-bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
-{
+bool CheckProofOfWork(const CBlockHeader& blockHeader, const Consensus::Params& params) {
     bool fNegative;
     bool fOverflow;
     arith_uint256 bnTarget;
 
-    bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
+    bnTarget.SetCompact(blockHeader.nBits, &fNegative, &fOverflow);
 
     // Check range
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
         return false;
 
-    // Check proof of work matches claimed amount
+    uint256 hash;
+
+    // If after cuckoo cycle pow change HF, check cuckoo proof of work hash instead
+    if ((blockHeader.nVersion & CUCKOO_HARDFORK_VERSION_MASK) == CUCKOO_HARDFORK_VERSION_MASK) {
+        if (!CheckCuckooProofOfWork(blockHeader)) 
+     	    return false;
+
+        CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
+        for (int i=0; i<42; i++) {
+            ss << blockHeader.cuckooProof[i];
+        }
+        hash = ss.GetHash();
+    } else {
+        hash = blockHeader.GetHash();
+    }
+
+
+    // Check block proof of work matches claimed amount
     if (UintToArith256(hash) > bnTarget)
         return false;
 
     return true;
+}
+
+bool CheckCuckooProofOfWork(const CBlockHeader& blockHeader) {
+    // Serialize header and trim to 80 bytes
+    std::vector<unsigned char> serializedHeader;
+    CVectorWriter(SER_NETWORK, INIT_PROTO_VERSION, serializedHeader, 0, blockHeader);
+    serializedHeader.resize(80);
+
+    unsigned char hash[32];
+    CSHA256().Write((const unsigned char *)serializedHeader.data(), 80).Finalize(hash);
+    return CCuckooCycleVerfier::verify((unsigned int *)blockHeader.cuckooProof, hash, 29)  == cuckoo_cycle::POW_OK;
 }

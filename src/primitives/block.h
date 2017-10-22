@@ -10,6 +10,9 @@
 #include "serialize.h"
 #include "uint256.h"
 
+
+static const int32_t CUCKOO_HARDFORK_VERSION_MASK = 0x10000000UL;
+
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -27,6 +30,7 @@ public:
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nNonce;
+    uint32_t cuckooProof[42];
 
     CBlockHeader()
     {
@@ -43,6 +47,11 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+        if (isCuckooPow()) {
+            for (int i=0; i<42; i++) {
+                READWRITE(cuckooProof[i]);
+            }
+        }
     }
 
     void SetNull()
@@ -53,6 +62,9 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
+        for (int i=0; i<42; i++) {
+            cuckooProof[i] = 0;
+        }
     }
 
     bool IsNull() const
@@ -65,6 +77,11 @@ public:
     int64_t GetBlockTime() const
     {
         return (int64_t)nTime;
+    }
+
+    bool isCuckooPow() const
+    {
+        return (nVersion & CUCKOO_HARDFORK_VERSION_MASK) == CUCKOO_HARDFORK_VERSION_MASK; 
     }
 };
 
@@ -113,6 +130,9 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+        for (int i=0; i<42; i++) {
+            block.cuckooProof[i] = cuckooProof[i];
+        }
         return block;
     }
 
