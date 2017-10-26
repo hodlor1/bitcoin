@@ -209,7 +209,7 @@ bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned i
     return true;
 }
 
-bool static CheckPubKeyEncoding(const valtype &vchPubKey, unsigned int flags, const SigVersion &sigversion, ScriptError* serror) {
+bool static CheckPubKeyEncoding(const valtype &vchPubKey, unsigned int flags, const unsigned int &sigversion, ScriptError* serror) {
     if ((flags & SCRIPT_VERIFY_STRICTENC) != 0 && !IsCompressedOrUncompressedPubKey(vchPubKey)) {
         return set_error(serror, SCRIPT_ERR_PUBKEYTYPE);
     }
@@ -243,7 +243,7 @@ bool static CheckMinimalPush(const valtype& data, opcodetype opcode) {
     return true;
 }
 
-bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror)
+bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, unsigned int sigversion, ScriptError* serror)
 {
     static const CScriptNum bnZero(0);
     static const CScriptNum bnOne(1);
@@ -266,6 +266,10 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     int nOpCount = 0;
     bool fRequireMinimal = (flags & SCRIPT_VERIFY_MINIMALDATA) != 0;
 
+	if (flags & SCRIPT_VERIFY_HARDFORK_VERSION) {
+		sigversion |= SIGVERSION_HARDFORK_FLAG;
+	}
+	
     try
     {
         while (pc < pend)
@@ -1173,9 +1177,10 @@ PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo)
     hashOutputs = GetOutputsHash(txTo);
 }
 
-uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
+uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, unsigned int sigversion, const PrecomputedTransactionData* cache)
 {
-    if (sigversion == SIGVERSION_WITNESS_V0) {
+	printf("SignatureHash! version: %d\n", sigversion);
+    if (((unsigned int)sigversion & ~SIGVERSION_HARDFORK_FLAG) == SIGVERSION_WITNESS_V0) {
         uint256 hashPrevouts;
         uint256 hashSequence;
         uint256 hashOutputs;
@@ -1217,6 +1222,11 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         // Sighash type
         ss << nHashType;
 
+		if (txTo.isHardForkVersion() || sigversion & SIGVERSION_HARDFORK_FLAG) {
+			printf("hard fork version with segwit for version - salting!");
+			ss << HARD_FORK_HASH_SALT;
+		}
+		
         return ss.GetHash();
     }
 
@@ -1240,6 +1250,11 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
+	if (txTo.isHardForkVersion() || sigversion & SIGVERSION_HARDFORK_FLAG) {
+		printf("hard fork version WITHOUT segwit for version - salting!");
+		ss << HARD_FORK_HASH_SALT;
+	}
+
     return ss.GetHash();
 }
 
@@ -1248,7 +1263,7 @@ bool TransactionSignatureChecker::VerifySignature(const std::vector<unsigned cha
     return pubkey.Verify(sighash, vchSig);
 }
 
-bool TransactionSignatureChecker::CheckSig(const std::vector<unsigned char>& vchSigIn, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const
+bool TransactionSignatureChecker::CheckSig(const std::vector<unsigned char>& vchSigIn, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, unsigned int sigversion) const
 {
     CPubKey pubkey(vchPubKey);
     if (!pubkey.IsValid())
