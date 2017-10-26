@@ -57,6 +57,7 @@ struct Params {
     /** Proof of work parameters */
     uint256 powLimit;
     uint256 cuckooPowLimit;
+	uint32_t cuckooGraphSize;
     bool fPowAllowMinDifficultyBlocks;
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
