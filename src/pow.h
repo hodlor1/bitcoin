@@ -20,6 +20,6 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 /** Check whether a block header satisfies the proof-of-work requirement specified by nBits */
 bool CheckProofOfWork(const CBlockHeader& blockHeader, const Consensus::Params& params);
 /** Check whether a cuckoo proof is valid and satisfies the proof-of-work requirement specified by nBits */
-bool CheckCuckooProofOfWork(const CBlockHeader& blockHeader);
+bool CheckCuckooProofOfWork(const CBlockHeader& blockHeader, const Consensus::Params& params);
 
 #endif // BITCOIN_POW_H

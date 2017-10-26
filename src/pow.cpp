@@ -92,31 +92,19 @@ bool CheckProofOfWork(const CBlockHeader& blockHeader, const Consensus::Params& 
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
         return false;
 
-    uint256 hash;
-
-    // If after cuckoo cycle pow change HF, check cuckoo proof of work hash instead
-    if ((blockHeader.nVersion & CUCKOO_HARDFORK_VERSION_MASK) == CUCKOO_HARDFORK_VERSION_MASK) {
-        if (!CheckCuckooProofOfWork(blockHeader)) 
-     	    return false;
-
-        CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-        for (int i=0; i<42; i++) {
-            ss << blockHeader.cuckooProof[i];
-        }
-        hash = ss.GetHash();
-    } else {
-        hash = blockHeader.GetHash();
-    }
-
+    // If after cuckoo cycle pow change HF, verify the cuckoo cycle is valid
+    if (blockHeader.isCuckooPow() && !CheckCuckooProofOfWork(blockHeader, params)) {
+		return false;
+	}
 
     // Check block proof of work matches claimed amount
-    if (UintToArith256(hash) > bnTarget)
+    if (UintToArith256(blockHeader.GetHash()) > bnTarget)
         return false;
 
     return true;
 }
 
-bool CheckCuckooProofOfWork(const CBlockHeader& blockHeader) {
+bool CheckCuckooProofOfWork(const CBlockHeader& blockHeader, const Consensus::Params& params) {
     // Serialize header and trim to 80 bytes
     std::vector<unsigned char> serializedHeader;
     CVectorWriter(SER_NETWORK, INIT_PROTO_VERSION, serializedHeader, 0, blockHeader);
@@ -124,5 +112,5 @@ bool CheckCuckooProofOfWork(const CBlockHeader& blockHeader) {
 
     unsigned char hash[32];
     CSHA256().Write((const unsigned char *)serializedHeader.data(), 80).Finalize(hash);
-    return CCuckooCycleVerfier::verify((unsigned int *)blockHeader.cuckooProof, hash, 29)  == cuckoo_cycle::POW_OK;
+	return CCuckooCycleVerfier::verify((unsigned int *)blockHeader.cuckooProof, hash, params.cuckooGraphSize -1) == cuckoo_cycle::POW_OK;
 }
