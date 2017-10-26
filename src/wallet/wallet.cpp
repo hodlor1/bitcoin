@@ -2647,6 +2647,11 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
     wtxNew.BindWallet(this);
     CMutableTransaction txNew;
 
+	// Remove this when setting CURRENT_VERSION=3;
+	if (chainActive.isHardForkActive(Params().GetConsensus()) && txNew.nVersion < CTransaction::HARDFORK_MIN_VERSION) {
+		txNew.nVersion = CTransaction::HARDFORK_MIN_VERSION;
+	}
+	
     // Discourage fee sniping.
     //
     // For a large miner the value of the transactions in the best block and

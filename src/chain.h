@@ -508,6 +508,9 @@ public:
 
     /** Find the earliest block with timestamp equal or greater than the given. */
     CBlockIndex* FindEarliestAtLeast(int64_t nTime) const;
+
+	/** Is the NEXT block expected to be a hard fork block */
+	bool isHardForkActive(const Consensus::Params& params);
 };
 
 #endif // BITCOIN_CHAIN_H

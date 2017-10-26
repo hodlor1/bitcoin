@@ -782,7 +782,11 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         }
 
         unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
-        if (!chainparams.RequireStandard()) {
+		// If the next block a hard forked block, do not accept transactions that are incompatible with it
+		if (chainActive.isHardForkActive(Params().GetConsensus())) {
+			scriptVerifyFlags |= SCRIPT_VERIFY_HARDFORK_VERSION;
+		}
+		if (!chainparams.RequireStandard()) {
             scriptVerifyFlags = gArgs.GetArg("-promiscuousmempoolflags", scriptVerifyFlags);
         }
 
@@ -1615,6 +1619,10 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         flags |= SCRIPT_VERIFY_NULLDUMMY;
     }
 
+	if (pindex->nHeight >= consensusparams.CuckooHardForkBlockHeight) {
+		flags |= SCRIPT_VERIFY_HARDFORK_VERSION;
+	}
+	
     return flags;
 }
 
@@ -1855,6 +1863,12 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
 
     int64_t nTime6 = GetTimeMicros(); nTimeCallbacks += nTime6 - nTime5;
     LogPrint(BCLog::BENCH, "    - Callbacks: %.2fms [%.2fs]\n", 0.001 * (nTime6 - nTime5), nTimeCallbacks * 0.000001);
+
+	// If last block before hard fork blocks, clear the mempool 
+	// (and don't accept any new fork incompatible transactions to mempool)
+	if (pindex->nHeight == chainparams.GetConsensus().CuckooHardForkBlockHeight - 1) {
+		mempool._clear();
+	}
 
     return true;
 }
