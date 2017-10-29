@@ -11,7 +11,8 @@
 #include "uint256.h"
 
 
-static const int32_t CUCKOO_HARDFORK_VERSION_MASK = 0x10000000UL;
+static const int32_t CUCKOO_HARDFORK_VERSION_MASK = 0x40000000UL;
+static const int64_t CUCKOO_HARDFORK_MIN_TIME = 1509148800; // 28 oct 2017 12:00 utc
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -83,7 +84,13 @@ public:
 
     bool isCuckooPow() const
     {
-        return (nVersion & CUCKOO_HARDFORK_VERSION_MASK) == CUCKOO_HARDFORK_VERSION_MASK; 
+        if ((nVersion & CUCKOO_HARDFORK_VERSION_MASK) == 0)
+			return false;
+
+		if (nTime < CUCKOO_HARDFORK_MIN_TIME)
+			return false;
+		
+		return true;
     }
 };
 
