@@ -1597,6 +1597,10 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
         nRelevantServices = ServiceFlags(nRelevantServices | NODE_WITNESS);
     }
 
+	// Prefer other nodes signaling they will fork
+	nLocalServices = ServiceFlags(nLocalServices | NODE_RESILIENCE);
+	nRelevantServices = ServiceFlags(nRelevantServices | NODE_RESILIENCE);
+
     // ********************************************************* Step 10: import blocks
 
     if (!CheckDiskSpace())

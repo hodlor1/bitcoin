@@ -275,6 +275,7 @@ enum ServiceFlags : uint64_t {
     // collisions and other cases where nodes may be advertising a service they
     // do not actually support. Other service bits should be allocated via the
     // BIP process.
+	NODE_RESILIENCE = (1 << 29),
 };
 
 /** A CService with information about it as peer */
