@@ -416,11 +416,11 @@ public:
         READWRITE(nBits);
         READWRITE(nNonce);
 
-        if ((this->nVersion & CUCKOO_HARDFORK_VERSION_MASK) == CUCKOO_HARDFORK_VERSION_MASK) {
-            for (int i=0; i<42; i++) {
-                READWRITE(cuckooProof[i]);
-            }
-        }
+		if ((nTime >= CUCKOO_HARDFORK_MIN_TIME) && (this->nVersion & CUCKOO_HARDFORK_VERSION_MASK) == CUCKOO_HARDFORK_VERSION_MASK) {
+			for (int i=0; i<42; i++) {
+				READWRITE(cuckooProof[i]);
+			}
+		}
     }
 
     uint256 GetBlockHash() const
