@@ -27,6 +27,10 @@ bool TransactionSignatureCreator::CreateSig(std::vector<unsigned char>& vchSig, 
     if (sigversion == SIGVERSION_WITNESS_V0 && !key.IsCompressed())
         return false;
 
+	if (txTo->isHardForkVersion()) {
+		sigversion |= SIGVERSION_HARDFORK_FLAG;
+	}
+	
     uint256 hash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion);
     if (!key.Sign(hash, vchSig))
         return false;
@@ -182,7 +186,8 @@ bool ProduceSignature(const BaseSignatureCreator& creator, const CScript& fromPu
     sigdata.scriptSig = PushAll(result);
 
     // Test solution
-    return solved && VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker());
+    return solved && (VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, creator.Checker()) || 
+					  VerifyScript(sigdata.scriptSig, fromPubKey, &sigdata.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS | SCRIPT_VERIFY_HARDFORK_VERSION, creator.Checker()));
 }
 
 SignatureData DataFromTransaction(const CMutableTransaction& tx, unsigned int nIn)
