@@ -1179,7 +1179,6 @@ PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo)
 
 uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, unsigned int sigversion, const PrecomputedTransactionData* cache)
 {
-	printf("SignatureHash! version: %d\n", sigversion);
     if (((unsigned int)sigversion & ~SIGVERSION_HARDFORK_FLAG) == SIGVERSION_WITNESS_V0) {
         uint256 hashPrevouts;
         uint256 hashSequence;
@@ -1222,7 +1221,7 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         // Sighash type
         ss << nHashType;
 
-		if (txTo.isHardForkVersion() || sigversion & SIGVERSION_HARDFORK_FLAG) {
+		if (sigversion & SIGVERSION_HARDFORK_FLAG) {
 			printf("hard fork version with segwit for version - salting!");
 			ss << HARD_FORK_HASH_SALT;
 		}
@@ -1250,7 +1249,7 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
-	if (txTo.isHardForkVersion() || sigversion & SIGVERSION_HARDFORK_FLAG) {
+	if (sigversion & SIGVERSION_HARDFORK_FLAG) {
 		printf("hard fork version WITHOUT segwit for version - salting!");
 		ss << HARD_FORK_HASH_SALT;
 	}
