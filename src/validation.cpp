@@ -822,6 +822,10 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // invalid blocks (using TestBlockValidity), however allowing such
         // transactions into the mempool can be exploited as a DoS attack.
         unsigned int currentBlockScriptVerifyFlags = GetBlockScriptFlags(chainActive.Tip(), Params().GetConsensus());
+		// For transaction, the fork happens 1 block earlier, so we need to re-check the hard fork flag
+		if (chainActive.isHardForkActive(Params().GetConsensus())) {
+			currentBlockScriptVerifyFlags |= SCRIPT_VERIFY_HARDFORK_VERSION;
+		}
         if (!CheckInputsFromMempoolAndCache(tx, state, view, pool, currentBlockScriptVerifyFlags, true, txdata))
         {
             // If we're using promiscuousmempoolflags, we may hit this normally
