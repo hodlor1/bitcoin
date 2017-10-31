@@ -89,13 +89,12 @@ bool CheckProofOfWork(const CBlockHeader& blockHeader, const Consensus::Params& 
     bnTarget.SetCompact(blockHeader.nBits, &fNegative, &fOverflow);
 
     // Check range
-    if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
+	if (fNegative || bnTarget == 0 || fOverflow || bnTarget > (blockHeader.isCuckooPow() ? UintToArith256(params.cuckooPowLimit) : UintToArith256(params.powLimit)))
         return false;
 
     // If after cuckoo cycle pow change HF, verify the cuckoo cycle is valid
-    if (blockHeader.isCuckooPow() && !CheckCuckooProofOfWork(blockHeader, params)) {
+    if (blockHeader.isCuckooPow() && !CheckCuckooProofOfWork(blockHeader, params))
 		return false;
-	}
 
     // Check block proof of work matches claimed amount
     if (UintToArith256(blockHeader.GetHash()) > bnTarget)
