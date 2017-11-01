@@ -67,6 +67,7 @@ struct Params {
 
     /** Block height at which cuckoo pow change becomes active */
     int CuckooHardForkBlockHeight;
+	int64_t msgStartSwitchDate;
 
     uint256 defaultAssumeValid;
 };

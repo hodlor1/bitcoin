@@ -1601,6 +1601,11 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 	nLocalServices = ServiceFlags(nLocalServices | NODE_RESILIENCE);
 	nRelevantServices = ServiceFlags(nRelevantServices | NODE_RESILIENCE);
 
+	// serve as a relay between legacy nodes and fork-ready nodes
+	if (gArgs.GetBoolArg("-relay", false)) {
+		nLocalServices = ServiceFlags(nLocalServices | NODE_RESILIENCE_RELAY);
+	}
+	
     // ********************************************************* Step 10: import blocks
 
     if (!CheckDiskSpace())
