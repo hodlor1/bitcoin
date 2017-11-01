@@ -17,10 +17,10 @@
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
-    unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
-    unsigned int nCuckooProofOfWorkLimit = UintToArith256(params.cuckooPowLimit).GetCompact();
-
     int currentBlockHeight = pindexLast->nHeight+1;
+	const uint256 usedPowLimit = (currentBlockHeight >= params.CuckooHardForkBlockHeight)? params.cuckooPowLimit : params.powLimit;
+	unsigned int nUsedPowLimit = UintToArith256(usedPowLimit).GetCompact();
+
 
     // Only change once per difficulty adjustment interval
     if (currentBlockHeight % params.DifficultyAdjustmentInterval() != 0)
@@ -31,12 +31,12 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
             // If the new block's timestamp is more than 2* 10 minutes
             // then allow mining of a min-difficulty block.
             if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing*2)
-                return (currentBlockHeight >= params.CuckooHardForkBlockHeight)? nCuckooProofOfWorkLimit : nProofOfWorkLimit;
-            else
+                return nUsedPowLimit;
+	     else
             {
                 // Return the last non-special-min-difficulty-rules-block
                 const CBlockIndex* pindex = pindexLast;
-                while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
+                while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nUsedPowLimit)
                     pindex = pindex->pprev;
                 return pindex->nBits;
             }
@@ -44,7 +44,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 
 		// Emergency retarget: If the last 6 blocks(without retargeting) took more than 1 hour each on average 
 		// retarget halfway closer to last easier difficulty
-		if (currentBlockHeight > params.CuckooHardForkBlockHeight && pindexLast->nBits != nCuckooProofOfWorkLimit)
+		if (currentBlockHeight > params.CuckooHardForkBlockHeight && pindexLast->nBits != nUsedPowLimit)
 		{
 			const int blocksPast = 6;
 			const CBlockIndex *pindexAnc = pindexLast->GetAncestor(currentBlockHeight - 1 - blocksPast);
@@ -71,7 +71,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     } 
     else if (currentBlockHeight == params.CuckooHardForkBlockHeight)
 	{
-        return nCuckooProofOfWorkLimit;
+        return nUsedPowLimit;
     }
 
     // Go back by what we want to be 14 days worth of blocks
@@ -95,8 +95,11 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
     if (nActualTimespan > params.nPowTargetTimespan*4)
         nActualTimespan = params.nPowTargetTimespan*4;
 
+	int currentBlockHeight = pindexLast->nHeight+1;
+	const uint256 powLimit = (currentBlockHeight >= params.CuckooHardForkBlockHeight)? params.cuckooPowLimit : params.powLimit;
+
     // Retarget
-    const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
+    const arith_uint256 bnPowLimit = UintToArith256(powLimit);
     arith_uint256 bnNew;
     bnNew.SetCompact(pindexLast->nBits);
     bnNew *= nActualTimespan;
