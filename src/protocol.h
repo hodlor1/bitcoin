@@ -276,6 +276,7 @@ enum ServiceFlags : uint64_t {
     // do not actually support. Other service bits should be allocated via the
     // BIP process.
 	NODE_RESILIENCE = (1 << 29),
+    NODE_RESILIENCE_RELAY = (1 << 30),
 };
 
 /** A CService with information about it as peer */
