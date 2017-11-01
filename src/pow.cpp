@@ -41,9 +41,36 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
                 return pindex->nBits;
             }
         }
-        return pindexLast->nBits;
+
+		// Emergency retarget: If the last 6 blocks(without retargeting) took more than 1 hour each on average 
+		// retarget halfway closer to last easier difficulty
+		if (currentBlockHeight > params.CuckooHardForkBlockHeight && pindexLast->nBits != nCuckooProofOfWorkLimit)
+		{
+			const int blocksPast = 6;
+			const CBlockIndex *pindexAnc = pindexLast->GetAncestor(currentBlockHeight - 1 - blocksPast);
+			assert(pindexAnc);
+			int64_t timePast = pindexLast->GetMedianTimePast() - pindexAnc->GetMedianTimePast();
+			int64_t retargetLimit = params.nPowTargetSpacing * 6 * blocksPast;
+
+			if (pindexLast->nBits == pindexAnc->nBits && timePast > retargetLimit)
+			{
+				const CBlockIndex* pindex = pindexAnc;
+				arith_uint256 bnCurrent, bnPrev;
+				bnCurrent.SetCompact(pindexLast->nBits);
+				while (pindex && bnPrev.SetCompact(pindex->nBits) <= bnCurrent)
+					pindex = pindex->pprev;
+
+				assert(pindex);
+				bnCurrent += bnPrev;
+				bnCurrent /= 2;
+
+				return bnCurrent.GetCompact();
+			}
+		}
+		return pindexLast->nBits;
     } 
-    else if (currentBlockHeight == params.CuckooHardForkBlockHeight) {
+    else if (currentBlockHeight == params.CuckooHardForkBlockHeight)
+	{
         return nCuckooProofOfWorkLimit;
     }
 
