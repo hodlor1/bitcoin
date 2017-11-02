@@ -1221,10 +1221,8 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         // Sighash type
         ss << nHashType;
 
-		if (sigversion & SIGVERSION_HARDFORK_FLAG) {
-			printf("hard fork version with segwit for version - salting!");
+		if (sigversion & SIGVERSION_HARDFORK_FLAG)
 			ss << HARD_FORK_HASH_SALT;
-		}
 		
         return ss.GetHash();
     }
@@ -1249,10 +1247,8 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
-	if (sigversion & SIGVERSION_HARDFORK_FLAG) {
-		printf("hard fork version WITHOUT segwit for version - salting!");
+	if (sigversion & SIGVERSION_HARDFORK_FLAG)
 		ss << HARD_FORK_HASH_SALT;
-	}
 
     return ss.GetHash();
 }
