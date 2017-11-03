@@ -126,7 +126,7 @@ enum
     SIGVERSION_HARDFORK_FLAG = 8,
 };
 
-static const unsigned char HARD_FORK_HASH_SALT = 0x03;
+static const int HARD_FORK_HASH_SALT = 0x4e4f3258;
 
 uint256 SignatureHash(const CScript &scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, const CAmount& amount, unsigned int sigversion, const PrecomputedTransactionData* cache = nullptr);
 
