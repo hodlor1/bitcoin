@@ -1,9 +1,19 @@
-Bitcoin Core integration/staging tree
-=====================================
+Bitcoin Resilience
+==================
 
-[![Build Status](https://travis-ci.org/bitcoin/bitcoin.svg?branch=master)](https://travis-ci.org/bitcoin/bitcoin)
+This is the public repo for the Bitcoin Resilience project, a Cuckoo Cycle PoW change hardfork.
+Please also see the reference implementation [miner](https://github.com/hodlor1/sgminer) and [pool](https://github.com/hodlor1/ckpool)
 
-https://bitcoincore.org
+The fork is based on version 0.15, and no special build requirements are needed.
+List of technical changes will be available soon.
+
+
+Status
+------
+
+Public testnet is active. To participate please download, build and run the resilience branch.
+
+
 
 What is Bitcoin?
 ----------------
