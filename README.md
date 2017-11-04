@@ -14,7 +14,6 @@ Status
 Public testnet is active. To participate please download, build and run the resilience branch.
 
 
-
 What is Bitcoin?
 ----------------
 
